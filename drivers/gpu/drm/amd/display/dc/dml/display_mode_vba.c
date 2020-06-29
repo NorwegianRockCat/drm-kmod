@@ -65,16 +65,18 @@ unsigned int dml_get_voltage_level(
 	memcpy(mode_lib->vba.cache_pipes, pipes, sizeof(*pipes) * num_pipes);
 	mode_lib->vba.cache_num_pipes = num_pipes;
 
-	if (need_recalculate && pipes[0].clks_cfg.dppclk_mhz != 0)
-		mode_lib->funcs.recalculate(mode_lib);
-	else {
+	
+	kernel_fpu_begin();
+	if (need_recalculate && pipes[0].clks_cfg.dppclk_mhz != 0) {
+	    mode_lib->funcs.recalculate(mode_lib);
+	} else {
 		fetch_socbb_params(mode_lib);
 		fetch_ip_params(mode_lib);
 		fetch_pipe_params(mode_lib);
 		PixelClockAdjustmentForProgressiveToInterlaceUnit(mode_lib);
 	}
 	mode_lib->funcs.validate(mode_lib);
-
+	kernel_fpu_end();
 	return mode_lib->vba.VoltageLevel;
 }
 
@@ -789,6 +791,7 @@ void ModeSupportAndSystemConfiguration(struct display_mode_lib *mode_lib)
 	mode_lib->vba.ReturnBW = mode_lib->vba.ReturnBWPerState[mode_lib->vba.VoltageLevel];
 	mode_lib->vba.FabricAndDRAMBandwidth = mode_lib->vba.FabricAndDRAMBandwidthPerState[mode_lib->vba.VoltageLevel];
 
+	kernel_fpu_begin();
 	fetch_socbb_params(mode_lib);
 	fetch_ip_params(mode_lib);
 	fetch_pipe_params(mode_lib);
@@ -803,6 +806,7 @@ void ModeSupportAndSystemConfiguration(struct display_mode_lib *mode_lib)
 	// Total Available Pipes Support Check
 	for (k = 0; k < mode_lib->vba.NumberOfActivePlanes; ++k)
 		total_pipes += mode_lib->vba.DPPPerPlane[k];
+	kernel_fpu_end();
 	ASSERT(total_pipes <= DC__NUM_DPP__MAX);
 }
 

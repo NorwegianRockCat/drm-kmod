@@ -1576,6 +1576,7 @@ void dml20_rq_dlg_get_dlg_reg(struct display_mode_lib *mode_lib,
 	display_dlg_sys_params_st dlg_sys_param = {0};
 
 	// Get watermark and Tex.
+	kernel_fpu_begin();
 	dlg_sys_param.t_urg_wm_us = get_wm_urgent(mode_lib, e2e_pipe_param, num_pipes);
 	dlg_sys_param.deepsleep_dcfclk_mhz = get_clk_dcf_deepsleep(mode_lib,
 			e2e_pipe_param,
@@ -1592,6 +1593,7 @@ void dml20_rq_dlg_get_dlg_reg(struct display_mode_lib *mode_lib,
 			num_pipes);
 	dlg_sys_param.t_srx_delay_us = mode_lib->ip.dcfclk_cstate_latency
 			/ dlg_sys_param.deepsleep_dcfclk_mhz; // TODO: Deprecated
+	kernel_fpu_end();
 
 	print__dlg_sys_params_st(mode_lib, dlg_sys_param);
 

@@ -959,7 +959,7 @@ struct clock_source *dcn20_clock_source_create(
 	return NULL;
 }
 
-static void read_dce_straps(
+static void  __noinline read_dce_straps(
 	struct dc_context *ctx,
 	struct resource_straps *straps)
 {
@@ -967,7 +967,7 @@ static void read_dce_straps(
 		FN(DC_PINSTRAPS, DC_PINSTRAPS_AUDIO), &straps->dc_pinstraps_audio);
 }
 
-static struct audio *dcn20_create_audio(
+static struct audio *  __noinline dcn20_create_audio(
 		struct dc_context *ctx, unsigned int inst)
 {
 	return dce_audio_create(ctx, inst,
@@ -1062,7 +1062,7 @@ void dcn20_dsc_destroy(struct display_stream_compressor **dsc)
 
 #endif
 
-static void destruct(struct dcn20_resource_pool *pool)
+static void  __noinline destruct(struct dcn20_resource_pool *pool)
 {
 	unsigned int i;
 
@@ -1192,7 +1192,7 @@ struct hubp *dcn20_hubp_create(
 	return NULL;
 }
 
-static void get_pixel_clock_parameters(
+static void  __noinline get_pixel_clock_parameters(
 	struct pipe_ctx *pipe_ctx,
 	struct pixel_clk_params *pixel_clk_params)
 {
@@ -1223,14 +1223,14 @@ static void get_pixel_clock_parameters(
 
 }
 
-static void build_clamping_params(struct dc_stream_state *stream)
+static void  __noinline build_clamping_params(struct dc_stream_state *stream)
 {
 	stream->clamping.clamping_level = CLAMPING_FULL_RANGE;
 	stream->clamping.c_depth = stream->timing.display_color_depth;
 	stream->clamping.pixel_encoding = stream->timing.pixel_encoding;
 }
 
-static enum dc_status build_pipe_hw_param(struct pipe_ctx *pipe_ctx)
+static enum dc_status  __noinline build_pipe_hw_param(struct pipe_ctx *pipe_ctx)
 {
 
 	get_pixel_clock_parameters(pipe_ctx, &pipe_ctx->stream_res.pix_clk_params);
@@ -1283,7 +1283,7 @@ enum dc_status dcn20_build_mapped_resource(const struct dc *dc, struct dc_state 
 
 #ifdef CONFIG_DRM_AMD_DC_DSC_SUPPORT
 
-static void acquire_dsc(struct resource_context *res_ctx,
+static void  __noinline acquire_dsc(struct resource_context *res_ctx,
 			const struct resource_pool *pool,
 			struct display_stream_compressor **dsc)
 {
@@ -1301,7 +1301,7 @@ static void acquire_dsc(struct resource_context *res_ctx,
 		}
 }
 
-static void release_dsc(struct resource_context *res_ctx,
+static void  __noinline release_dsc(struct resource_context *res_ctx,
 			const struct resource_pool *pool,
 			struct display_stream_compressor **dsc)
 {
@@ -1319,7 +1319,7 @@ static void release_dsc(struct resource_context *res_ctx,
 
 
 #ifdef CONFIG_DRM_AMD_DC_DSC_SUPPORT
-static enum dc_status add_dsc_to_stream_resource(struct dc *dc,
+static enum dc_status  __noinline add_dsc_to_stream_resource(struct dc *dc,
 		struct dc_state *dc_ctx,
 		struct dc_stream_state *dc_stream)
 {
@@ -1349,7 +1349,7 @@ static enum dc_status add_dsc_to_stream_resource(struct dc *dc,
 }
 
 
-static enum dc_status remove_dsc_from_stream_resource(struct dc *dc,
+static enum dc_status  __noinline remove_dsc_from_stream_resource(struct dc *dc,
 		struct dc_state *new_ctx,
 		struct dc_stream_state *dc_stream)
 {
@@ -1413,7 +1413,7 @@ enum dc_status dcn20_remove_stream_from_ctx(struct dc *dc, struct dc_state *new_
 }
 
 
-static void swizzle_to_dml_params(
+static void  __noinline swizzle_to_dml_params(
 		enum swizzle_mode_values swizzle,
 		unsigned int *sw_mode)
 {
@@ -1473,7 +1473,7 @@ static void swizzle_to_dml_params(
 	}
 }
 
-static bool dcn20_split_stream_for_combine(
+static bool  __noinline dcn20_split_stream_for_combine(
 		struct resource_context *res_ctx,
 		const struct resource_pool *pool,
 		struct pipe_ctx *primary_pipe,
@@ -1602,6 +1602,7 @@ int dcn20_populate_dml_pipes_from_context(
 	int pipe_cnt, i;
 	bool synchronized_vblank = true;
 
+	kernel_fpu_begin();
 	for (i = 0, pipe_cnt = -1; i < dc->res_pool->pipe_count; i++) {
 		if (!res_ctx->pipe_ctx[i].stream)
 			continue;
@@ -1890,7 +1891,7 @@ int dcn20_populate_dml_pipes_from_context(
 
 	/* populate writeback information */
 	dc->res_pool->funcs->populate_dml_writeback_from_context(dc, res_ctx, pipes);
-
+	kernel_fpu_end();
 	return pipe_cnt;
 }
 
@@ -1979,7 +1980,7 @@ void dcn20_set_mcif_arb_params(
 }
 
 #ifdef CONFIG_DRM_AMD_DC_DSC_SUPPORT
-static bool dcn20_validate_dsc(struct dc *dc, struct dc_state *new_ctx)
+static bool  __noinline dcn20_validate_dsc(struct dc *dc, struct dc_state *new_ctx)
 {
 	int i;
 
@@ -2160,12 +2161,14 @@ bool dcn20_validate_bandwidth(struct dc *dc, struct dc_state *context,
 			context->bw_ctx.dml.vba.ODMCombineEnabled[pipe_idx] = true;
 			context->bw_ctx.dml.vba.ODMCombineEnablePerState[vlevel][pipe_idx] = true;
 		}
+		kernel_fpu_begin();
 		if (force_split && context->bw_ctx.dml.vba.NoOfDPP[vlevel][context->bw_ctx.dml.vba.maxMpcComb][pipe_idx] == 1)
 			context->bw_ctx.dml.vba.RequiredDPPCLK[vlevel][context->bw_ctx.dml.vba.maxMpcComb][pipe_idx] /= 2;
 		if (dc->config.forced_clocks == true) {
 			context->bw_ctx.dml.vba.RequiredDPPCLK[vlevel][context->bw_ctx.dml.vba.maxMpcComb][pipe_idx] =
 					context->bw_ctx.dml.soc.clock_limits[0].dppclk_mhz;
 		}
+		kernel_fpu_end();
 		if (!pipe->top_pipe && !pipe->plane_state && context->bw_ctx.dml.vba.ODMCombineEnabled[pipe_idx]) {
 			hsplit_pipe = find_idle_secondary_pipe(&context->res_ctx, dc->res_pool, pipe);
 			ASSERT(hsplit_pipe);
@@ -2242,6 +2245,7 @@ bool dcn20_validate_bandwidth(struct dc *dc, struct dc_state *context,
 		goto validate_out;
 	}
 
+	kernel_fpu_begin();
 	for (i = 0, pipe_idx = 0, pipe_cnt = 0; i < dc->res_pool->pipe_count; i++) {
 		if (!context->res_ctx.pipe_ctx[i].stream)
 			continue;
@@ -2273,6 +2277,7 @@ bool dcn20_validate_bandwidth(struct dc *dc, struct dc_state *context,
 		}
 		pipe_cnt++;
 	}
+	kernel_fpu_end();
 
 	if (pipe_cnt != pipe_idx) {
 		if (dc->res_pool->funcs->populate_dml_pipes)
@@ -2293,6 +2298,7 @@ bool dcn20_validate_bandwidth(struct dc *dc, struct dc_state *context,
 		pipes[0].clks_cfg.dcfclk_mhz = context->bw_ctx.dml.soc.clock_limits[1].dcfclk_mhz;
 		pipes[0].clks_cfg.socclk_mhz = context->bw_ctx.dml.soc.clock_limits[1].socclk_mhz;
 	}
+	kernel_fpu_begin();
 	context->bw_ctx.bw.dcn.watermarks.b.urgent_ns = get_wm_urgent(&context->bw_ctx.dml, pipes, pipe_cnt) * 1000;
 	context->bw_ctx.bw.dcn.watermarks.b.cstate_pstate.cstate_enter_plus_exit_ns = get_wm_stutter_enter_exit(&context->bw_ctx.dml, pipes, pipe_cnt) * 1000;
 	context->bw_ctx.bw.dcn.watermarks.b.cstate_pstate.cstate_exit_ns = get_wm_stutter_exit(&context->bw_ctx.dml, pipes, pipe_cnt) * 1000;
@@ -2329,6 +2335,7 @@ bool dcn20_validate_bandwidth(struct dc *dc, struct dc_state *context,
 	context->bw_ctx.bw.dcn.watermarks.a.cstate_pstate.cstate_exit_ns = get_wm_stutter_exit(&context->bw_ctx.dml, pipes, pipe_cnt) * 1000;
 	context->bw_ctx.bw.dcn.watermarks.a.cstate_pstate.pstate_change_ns = get_wm_dram_clock_change(&context->bw_ctx.dml, pipes, pipe_cnt) * 1000;
 	context->bw_ctx.bw.dcn.watermarks.a.pte_meta_urgent_ns = get_wm_memory_trip(&context->bw_ctx.dml, pipes, pipe_cnt) * 1000;
+
 	/* Writeback MCIF_WB arbitration parameters */
 	dc->res_pool->funcs->set_mcif_arb_params(dc, context, pipes, pipe_cnt);
 
@@ -2385,6 +2392,7 @@ bool dcn20_validate_bandwidth(struct dc *dc, struct dc_state *context,
 				pipes[pipe_idx].pipe);
 		pipe_idx++;
 	}
+	kernel_fpu_end();
 
 	out = true;
 	goto validate_out;
@@ -2441,7 +2449,7 @@ bool dcn20_get_dcc_compression_cap(const struct dc *dc,
 			output);
 }
 
-static void dcn20_destroy_resource_pool(struct resource_pool **pool)
+static void  __noinline dcn20_destroy_resource_pool(struct resource_pool **pool)
 {
 	struct dcn20_resource_pool *dcn20_pool = TO_DCN20_RES_POOL(*pool);
 
@@ -2562,7 +2570,7 @@ void dcn20_pp_smu_destroy(struct pp_smu_funcs **pp_smu)
 	}
 }
 
-static void cap_soc_clocks(
+static void  __noinline cap_soc_clocks(
 		struct _vcs_dpi_soc_bounding_box_st *bb,
 		struct pp_smu_nv_clock_table max_clocks)
 {
@@ -2632,7 +2640,7 @@ static void cap_soc_clocks(
 	}
 }
 
-static void update_bounding_box(struct dc *dc, struct _vcs_dpi_soc_bounding_box_st *bb,
+static void  __noinline update_bounding_box(struct dc *dc, struct _vcs_dpi_soc_bounding_box_st *bb,
 		struct pp_smu_nv_clock_table *max_clocks, unsigned int *uclk_states, unsigned int num_states)
 {
 	struct _vcs_dpi_voltage_scaling_st calculated_states[MAX_CLOCK_LIMIT_STATES] = {0};
@@ -2684,7 +2692,7 @@ static void update_bounding_box(struct dc *dc, struct _vcs_dpi_soc_bounding_box_
 	bb->clock_limits[num_calculated_states].state = bb->num_states;
 }
 
-static void patch_bounding_box(struct dc *dc, struct _vcs_dpi_soc_bounding_box_st *bb)
+static void  __noinline patch_bounding_box(struct dc *dc, struct _vcs_dpi_soc_bounding_box_st *bb)
 {
 	kernel_fpu_begin();
 	if ((int)(bb->sr_exit_time_us * 1000) != dc->bb_overrides.sr_exit_time_ns
@@ -2716,7 +2724,7 @@ static void patch_bounding_box(struct dc *dc, struct _vcs_dpi_soc_bounding_box_s
 #define fixed16_to_double(x) (((double) x) / ((double) (1 << 16)))
 #define fixed16_to_double_to_cpu(x) fixed16_to_double(le32_to_cpu(x))
 
-static bool init_soc_bounding_box(struct dc *dc,
+static bool  __noinline init_soc_bounding_box(struct dc *dc,
 				  struct dcn20_resource_pool *pool)
 {
 	const struct gpu_info_soc_bounding_box_v1_0 *bb = dc->soc_bounding_box;
@@ -2874,12 +2882,12 @@ static bool init_soc_bounding_box(struct dc *dc,
 	return true;
 }
 
-static bool construct(
+static bool __noinline construct(
 	uint8_t num_virtual_links,
 	struct dc *dc,
 	struct dcn20_resource_pool *pool)
 {
-	int i;
+    int i;
 	struct dc_context *ctx = dc->ctx;
 	struct irq_service_init_data init_data;
 
@@ -2888,6 +2896,7 @@ static bool construct(
 	pool->base.res_cap = &res_cap_nv10;
 	pool->base.funcs = &dcn20_res_pool_funcs;
 
+	DRM_INFO("resource + asic cap harcoding\n");
 	/*************************************************
 	 *  Resource + asic cap harcoding                *
 	 *************************************************/
@@ -2920,7 +2929,7 @@ static bool construct(
 	// Init the vm_helper
 	if (dc->vm_helper)
 		vm_helper_init(dc->vm_helper, 16);
-
+	DRM_INFO("create resources\n");
 	/*************************************************
 	 *  Create resources                             *
 	 *************************************************/
@@ -2991,25 +3000,32 @@ static bool construct(
 		goto create_fail;
 	}
 
+		DRM_INFO("smu_create\n");
 	pool->base.pp_smu = dcn20_pp_smu_create(ctx);
 
 
+	DRM_INFO("soc_bounding_box\n");
 	if (!init_soc_bounding_box(dc, pool)) {
 		dm_error("DC: failed to initialize soc bounding box!\n");
 		BREAK_TO_DEBUGGER();
 		goto create_fail;
 	}
 
+	DRM_INFO("dml_init_instance\n");
 	dml_init_instance(&dc->dml, &dcn2_0_soc, &dcn2_0_ip, DML_PROJECT_NAVI10);
 
 	if (!dc->debug.disable_pplib_wm_range) {
-		struct pp_smu_wm_range_sets ranges = {0};
+	    DRM_INFO("1 \n");
+
+
+	    struct pp_smu_wm_range_sets ranges = {0};
 		int i = 0;
 
 		ranges.num_reader_wm_sets = 0;
 
 		if (dcn2_0_soc.num_states == 1) {
-			ranges.reader_wm_sets[0].wm_inst = i;
+		    DRM_INFO("2 \n");
+		    ranges.reader_wm_sets[0].wm_inst = i;
 			ranges.reader_wm_sets[0].min_drain_clk_mhz = PP_SMU_WM_SET_RANGE_CLK_UNCONSTRAINED_MIN;
 			ranges.reader_wm_sets[0].max_drain_clk_mhz = PP_SMU_WM_SET_RANGE_CLK_UNCONSTRAINED_MAX;
 			ranges.reader_wm_sets[0].min_fill_clk_mhz = PP_SMU_WM_SET_RANGE_CLK_UNCONSTRAINED_MIN;
@@ -3017,38 +3033,56 @@ static bool construct(
 
 			ranges.num_reader_wm_sets = 1;
 		} else if (dcn2_0_soc.num_states > 1) {
-			for (i = 0; i < 4 && i < dcn2_0_soc.num_states; i++) {
+		    DRM_INFO("3 \n");
+		    for (i = 0; i < 4 && i < dcn2_0_soc.num_states; i++) {
+			DRM_INFO("3: %d  \n", i);
 				ranges.reader_wm_sets[i].wm_inst = i;
+		    DRM_INFO("3a \n");
 				ranges.reader_wm_sets[i].min_drain_clk_mhz = PP_SMU_WM_SET_RANGE_CLK_UNCONSTRAINED_MIN;
+		    DRM_INFO("3b \n");
 				ranges.reader_wm_sets[i].max_drain_clk_mhz = PP_SMU_WM_SET_RANGE_CLK_UNCONSTRAINED_MAX;
-				ranges.reader_wm_sets[i].min_fill_clk_mhz = (i > 0) ? (dcn2_0_soc.clock_limits[i - 1].dram_speed_mts / 16) + 1 : 0;
-				ranges.reader_wm_sets[i].max_fill_clk_mhz = dcn2_0_soc.clock_limits[i].dram_speed_mts / 16;
+		    DRM_INFO("3c \n");
 
+		    if (i > 0) {
+			kernel_fpu_begin();
+			ranges.reader_wm_sets[i].min_fill_clk_mhz =  (dcn2_0_soc.clock_limits[i - 1].dram_speed_mts / 16) + 1;
+			kernel_fpu_end();
+		    } else {
+			ranges.reader_wm_sets[i].min_fill_clk_mhz = 0;
+		    }
+		    DRM_INFO("3d \n");
+		    kernel_fpu_begin();
+		    ranges.reader_wm_sets[i].max_fill_clk_mhz = dcn2_0_soc.clock_limits[i].dram_speed_mts / 16;
+		    kernel_fpu_end();
+
+		    		    DRM_INFO("3e \n");
 				ranges.num_reader_wm_sets = i + 1;
 			}
-
+DRM_INFO("4 \n");
 			ranges.reader_wm_sets[0].min_fill_clk_mhz = PP_SMU_WM_SET_RANGE_CLK_UNCONSTRAINED_MIN;
 			ranges.reader_wm_sets[ranges.num_reader_wm_sets - 1].max_fill_clk_mhz = PP_SMU_WM_SET_RANGE_CLK_UNCONSTRAINED_MAX;
 		}
-
+DRM_INFO("5 \n");
 		ranges.num_writer_wm_sets = 1;
-
+DRM_INFO("6 \n");
 		ranges.writer_wm_sets[0].wm_inst = 0;
 		ranges.writer_wm_sets[0].min_fill_clk_mhz = PP_SMU_WM_SET_RANGE_CLK_UNCONSTRAINED_MIN;
 		ranges.writer_wm_sets[0].max_fill_clk_mhz = PP_SMU_WM_SET_RANGE_CLK_UNCONSTRAINED_MAX;
 		ranges.writer_wm_sets[0].min_drain_clk_mhz = PP_SMU_WM_SET_RANGE_CLK_UNCONSTRAINED_MIN;
 		ranges.writer_wm_sets[0].max_drain_clk_mhz = PP_SMU_WM_SET_RANGE_CLK_UNCONSTRAINED_MAX;
-
+DRM_INFO("7 \n");
 		/* Notify PP Lib/SMU which Watermarks to use for which clock ranges */
 		if (pool->base.pp_smu->nv_funcs.set_wm_ranges)
 			pool->base.pp_smu->nv_funcs.set_wm_ranges(&pool->base.pp_smu->nv_funcs.pp_smu, &ranges);
 	}
-
+DRM_INFO("8 \n");
 	init_data.ctx = dc->ctx;
+	DRM_INFO("dal_irq_service\n");
 	pool->base.irqs = dal_irq_service_dcn20_create(&init_data);
 	if (!pool->base.irqs)
 		goto create_fail;
 
+	DRM_INFO("lots of pool stuff\n");
 	/* mem input -> ipp -> dpp -> opp -> TG */
 	for (i = 0; i < pool->base.pipe_count; i++) {
 		pool->base.hubps[i] = dcn20_hubp_create(ctx, i);
@@ -3128,8 +3162,9 @@ static bool construct(
 		dm_error("DC: failed to create hubbub!\n");
 		goto create_fail;
 	}
-
+	DRM_INFO("BEFORE ifdef\n");
 #ifdef CONFIG_DRM_AMD_DC_DSC_SUPPORT
+	DRM_INFO("   in ifdef\n");
 	for (i = 0; i < pool->base.res_cap->num_dsc; i++) {
 		pool->base.dscs[i] = dcn20_dsc_create(ctx, i);
 		if (pool->base.dscs[i] == NULL) {
@@ -3139,23 +3174,25 @@ static bool construct(
 		}
 	}
 #endif
-
+	DRM_INFO("dwbc_create\n");
 	if (!dcn20_dwbc_create(ctx, &pool->base)) {
 		BREAK_TO_DEBUGGER();
 		dm_error("DC: failed to create dwbc!\n");
 		goto create_fail;
 	}
+	DRM_INFO("mmhubbub_create\n");
 	if (!dcn20_mmhubbub_create(ctx, &pool->base)) {
 		BREAK_TO_DEBUGGER();
 		dm_error("DC: failed to create mcif_wb!\n");
 		goto create_fail;
 	}
-
+	DRM_INFO("resource_construct\n");
 	if (!resource_construct(num_virtual_links, dc, &pool->base,
 			(!IS_FPGA_MAXIMUS_DC(dc->ctx->dce_environment) ?
 			&res_create_funcs : &res_create_maximus_funcs)))
 			goto create_fail;
 
+	DRM_INFO("hw_sequencer_construct\n");
 	dcn20_hw_sequencer_construct(dc);
 
 	dc->caps.max_planes =  pool->base.pipe_count;
@@ -3164,11 +3201,11 @@ static bool construct(
 		dc->caps.planes[i] = plane_cap;
 
 	dc->cap_funcs = cap_funcs;
-
+	DRM_INFO("SEEMED OK, leave\n");
 	return true;
 
 create_fail:
-
+	DRM_INFO("Failled\n");
 	destruct(pool);
 
 	return false;

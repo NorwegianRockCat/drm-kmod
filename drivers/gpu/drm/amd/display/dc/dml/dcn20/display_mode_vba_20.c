@@ -232,6 +232,8 @@ static void dml20_DISPCLKDPPCLKDCFCLKDeepSleepPrefetchParametersWatermarksAndPer
 
 void dml20_recalculate(struct display_mode_lib *mode_lib)
 {
+	kernel_fpu_begin();
+
 	ModeSupportAndSystemConfiguration(mode_lib);
 	mode_lib->vba.FabricAndDRAMBandwidth = dml_min(
 		mode_lib->vba.DRAMSpeed * mode_lib->vba.NumberOfChannels * mode_lib->vba.DRAMChannelWidth,
@@ -239,6 +241,8 @@ void dml20_recalculate(struct display_mode_lib *mode_lib)
 	PixelClockAdjustmentForProgressiveToInterlaceUnit(mode_lib);
 	dml20_DisplayPipeConfiguration(mode_lib);
 	dml20_DISPCLKDPPCLKDCFCLKDeepSleepPrefetchParametersWatermarksAndPerformanceCalculation(mode_lib);
+	kernel_fpu_end();
+
 }
 
 static double adjust_ReturnBW(
